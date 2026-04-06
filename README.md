@@ -50,3 +50,31 @@ Auto-scrolling stops automatically after the page stops loading new content (20 
 Downloads are named automatically:
 - Likes: `x-[username]-likes-[YYYYMMDD].csv` / `.json`
 - Bookmarks: `x-bookmarks-[YYYYMMDD].csv` / `.json`
+
+## Viewer
+
+Open `viewer.html` in any browser to browse your exported tweets.
+
+### Features
+
+- **Timeline view** — scrollable feed of tweet cards, similar to Twitter's layout
+- **Categories** — tag tweets manually or auto-categorize with an LLM (any OpenAI-compatible API)
+- **Detail panel** — click a tweet to see its Twitter oEmbed preview and raw field data
+- **Search & filter** — search by text/user, filter by category
+- **Theme toggle** — dark and light themes
+- **Export/Import categories** — save your categorization work as JSON and reload it later
+
+### How to use
+
+1. Export your tweets using the console script or browser extension
+2. Open `viewer.html` in your browser
+3. Click **Load File** or drag-and-drop your `.json` / `.csv` export
+4. Browse, categorize, and explore your tweets
+
+> **Note:** This is a fully client-side app. No data is sent to any server. API keys and categories are held in memory only and will be lost on page refresh — use Export Categories to save your work.
+
+## Support
+
+If you find this tool useful, consider supporting the project:
+
+[GitHub Sponsors](https://github.com/sponsors/farizdp)

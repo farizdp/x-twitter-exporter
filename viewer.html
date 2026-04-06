@@ -153,7 +153,16 @@ html, body {
   background: var(--surface);
   border-right: 1px solid var(--border-subtle);
   display: flex; flex-direction: column;
-  overflow-y: auto; padding: 12px 0;
+  overflow: hidden; padding: 0;
+}
+
+.sidebar-top {
+  flex: 1; overflow-y: auto; padding: 12px 0;
+}
+
+.sidebar-bottom {
+  border-top: 1px solid var(--border-subtle);
+  padding: 8px 0; flex-shrink: 0;
 }
 
 .nav-item {
@@ -354,8 +363,11 @@ html, body {
 
 .detail-oembed {
   padding: 16px; border-bottom: 1px solid var(--border-subtle);
-  min-height: 120px;
+  min-height: 120px; max-height: 50vh;
+  overflow-y: auto; overflow-x: hidden;
 }
+.detail-oembed iframe, .detail-oembed blockquote,
+.detail-oembed .twitter-tweet { max-width: 100% !important; }
 
 .detail-oembed-loading {
   display: flex; align-items: center; justify-content: center;
@@ -530,7 +542,7 @@ html, body {
   background: var(--surface-raised); font-size: 12px;
 }
 .cat-manage-item .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.cat-manage-item span { flex: 1; }
+.cat-manage-item .cat-manage-name { flex: 1; }
 .cat-manage-item .cat-count {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px; color: var(--text-faint);
@@ -540,6 +552,19 @@ html, body {
   cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 4px;
 }
 .cat-manage-del:hover { color: var(--red); background: rgba(240,94,94,0.1); }
+
+.cat-manage-edit {
+  background: none; border: none; color: var(--text-faint);
+  cursor: pointer; font-size: 12px; padding: 2px 6px; border-radius: 4px;
+}
+.cat-manage-edit:hover { color: var(--blue); background: rgba(94,168,240,0.1); }
+
+.cat-manage-rename-input {
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  padding: 2px 6px; border-radius: 4px;
+  border: 1px solid var(--accent); background: var(--bg);
+  color: var(--text); outline: none; flex: 1;
+}
 
 .cat-add-row { display: flex; gap: 6px; margin-top: 8px; }
 .cat-add-row input { flex: 1; }
@@ -557,6 +582,27 @@ html, body {
    HIDDEN
    ═══════════════════════════════════════════════════════════════ */
 #fileInput, #catFileInput { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   DISCLAIMER BOX
+   ═══════════════════════════════════════════════════════════════ */
+.disclaimer-box {
+  margin-top: 16px; padding: 12px 14px;
+  border-radius: 8px; font-size: 11px; line-height: 1.6;
+  background: rgba(94, 168, 240, 0.06);
+  border: 1px solid rgba(94, 168, 240, 0.15);
+  color: var(--text-dim);
+}
+.disclaimer-box strong { color: var(--blue); }
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR DISCLAIMER
+   ═══════════════════════════════════════════════════════════════ */
+.sidebar-disclaimer {
+  font-size: 10px; color: var(--text-faint);
+  padding: 8px 20px; line-height: 1.4;
+  border-top: 1px solid var(--border-subtle);
+}
 
 /* ═══════════════════════════════════════════════════════════════
    ANIMATIONS
@@ -649,6 +695,10 @@ html, body {
         <input type="file" id="catFileInput" accept=".json">
       </div>
     </div>
+
+    <div class="disclaimer-box">
+      <strong>Privacy notice:</strong> This app does not store any data externally. API keys, categories, and tweet data are held in browser memory only and <strong>will be lost on page refresh</strong>. Export your categories before closing to preserve them.
+    </div>
   </div>
 </div>
 
@@ -672,37 +722,55 @@ html, body {
   </div>
 </div>
 
+<!-- SUPPORT MODAL -->
+<div class="modal-backdrop" id="supportModal">
+  <div class="modal" onclick="event.stopPropagation()" style="width:300px;text-align:center;">
+    <h2>Support <button class="modal-close" onclick="closeModal('supportModal')">&times;</button></h2>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://github.com/sponsors/farizdp" alt="QR Code" style="width:160px;height:160px;border-radius:8px;background:#fff;margin-bottom:12px;">
+    <div style="margin-bottom:8px;">
+      <a href="https://github.com/sponsors/farizdp" target="_blank" rel="noopener" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent-dim);text-decoration:none;">github.com/sponsors/farizdp</a>
+    </div>
+    <p style="font-size:11px;color:var(--text-faint);line-height:1.5;">If you find this tool useful, consider sponsoring to help keep it maintained.</p>
+  </div>
+</div>
+
 <!-- LAYOUT -->
 <div class="layout">
   <!-- LEFT SIDEBAR -->
   <div class="sidebar" id="sidebar">
-    <button class="nav-item active" data-nav="all">
-      <span class="nav-icon">&#9776;</span> All Tweets
-      <span class="nav-count" id="navCountAll">0</span>
-    </button>
+    <div class="sidebar-top">
+      <button class="nav-item active" data-nav="all">
+        <span class="nav-icon">&#9776;</span> All Tweets
+        <span class="nav-count" id="navCountAll">0</span>
+      </button>
 
-    <div class="nav-section-label">Categories</div>
-    <div class="cat-list" id="catList"></div>
-    <button class="add-cat-btn" id="addCatBtn" onclick="showAddCatInput()">
-      <span>+</span> Add Category
-    </button>
-    <input type="text" class="add-cat-input" id="addCatSidebarInput" placeholder="Category name..."
-           onkeydown="if(event.key==='Enter'){addCategoryFromSidebar();} if(event.key==='Escape'){this.style.display='none';}">
+      <div class="nav-section-label">Categories</div>
+      <div class="cat-list" id="catList"></div>
+      <button class="add-cat-btn" id="addCatBtn" onclick="showAddCatInput()">
+        <span>+</span> Add Category
+      </button>
+      <input type="text" class="add-cat-input" id="addCatSidebarInput" placeholder="Category name..."
+             onkeydown="if(event.key==='Enter'){addCategoryFromSidebar();} if(event.key==='Escape'){this.style.display='none';}">
+    </div>
 
-    <div class="nav-divider"></div>
-
-    <button class="nav-item" onclick="openModal('settingsModal')">
-      <span class="nav-icon">&#9881;</span> Settings
-    </button>
-    <button class="nav-item" onclick="toggleTheme()">
-      <span class="nav-icon" id="themeIcon">&#9790;</span> Theme
-    </button>
-    <button class="nav-item" onclick="clearData()">
-      <span class="nav-icon">&#128465;</span> Clear Data
-    </button>
-    <button class="nav-item" onclick="openModal('aboutModal')">
-      <span class="nav-icon">&#8505;</span> About
-    </button>
+    <div class="sidebar-bottom">
+      <button class="nav-item" onclick="openModal('settingsModal')">
+        <span class="nav-icon">&#9881;</span> Settings
+      </button>
+      <button class="nav-item" onclick="toggleTheme()">
+        <span class="nav-icon" id="themeIcon">&#9790;</span> Theme
+      </button>
+      <button class="nav-item" onclick="clearData()">
+        <span class="nav-icon">&#128465;</span> Clear Data
+      </button>
+      <button class="nav-item" onclick="openModal('aboutModal')">
+        <span class="nav-icon">&#8505;</span> About
+      </button>
+      <button class="nav-item" onclick="openModal('supportModal')">
+        <span class="nav-icon" style="color:var(--red);">&#9829;</span> Support
+      </button>
+      <div class="sidebar-disclaimer">In-memory only — export categories before refresh</div>
+    </div>
   </div>
 
   <!-- CENTER TIMELINE -->
@@ -1086,14 +1154,42 @@ html, body {
     const list = $("#catManageList");
     list.innerHTML = categories.map((cat) => {
       const count = tweets.filter((t) => tweetCategories[t.id] === cat).length;
-      return `<div class="cat-manage-item">
+      return `<div class="cat-manage-item" id="cat-row-${esc(cat)}">
         <span class="cat-dot" style="background:${catColor(cat)}"></span>
-        <span>${esc(cat)}</span>
+        <span class="cat-manage-name">${esc(cat)}</span>
         <span class="cat-count">${count}</span>
+        <button class="cat-manage-edit" onclick="startRenameCat('${esc(cat)}')" title="Rename">&#9998;</button>
         <button class="cat-manage-del" onclick="deleteCat('${esc(cat)}')" title="Delete">&times;</button>
       </div>`;
     }).join("");
   }
+
+  window.startRenameCat = function (cat) {
+    const row = document.getElementById("cat-row-" + cat);
+    if (!row) return;
+    const nameSpan = row.querySelector(".cat-manage-name");
+    const oldHTML = nameSpan.outerHTML;
+    nameSpan.outerHTML = `<input class="cat-manage-rename-input" value="${esc(cat)}" data-old="${esc(cat)}"
+      onkeydown="if(event.key==='Enter')commitRenameCat(this); if(event.key==='Escape'){renderSettingsCatList();}"
+      onblur="commitRenameCat(this)">`;
+    const inp = row.querySelector(".cat-manage-rename-input");
+    inp.focus();
+    inp.select();
+  };
+
+  window.commitRenameCat = function (inp) {
+    const oldName = inp.dataset.old;
+    const newName = inp.value.trim();
+    if (!newName || newName === oldName) { renderSettingsCatList(); return; }
+    if (categories.includes(newName)) { alert("Category '" + newName + "' already exists."); renderSettingsCatList(); return; }
+    const idx = categories.indexOf(oldName);
+    if (idx !== -1) categories[idx] = newName;
+    for (const id in tweetCategories) { if (tweetCategories[id] === oldName) tweetCategories[id] = newName; }
+    if (activeNav === oldName) activeNav = newName;
+    renderSettingsCatList();
+    renderSidebar();
+    applyFilters();
+  };
 
   window.deleteCat = function (cat) {
     const count = tweets.filter((t) => tweetCategories[t.id] === cat).length;
@@ -1303,6 +1399,14 @@ html, body {
     try { return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
     catch { return d; }
   }
+
+  // ── Beforeunload warning ───────────────────────────────────────
+  window.addEventListener("beforeunload", (e) => {
+    if (Object.keys(tweetCategories).length > 0) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
 
   // Initial sidebar render
   renderSidebar();

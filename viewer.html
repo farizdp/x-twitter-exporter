@@ -213,7 +213,6 @@ html, body {
 }
 
 .cat-item .nav-count {
-  margin-left: auto;
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px; color: var(--text-faint);
   background: var(--surface-raised);
@@ -350,10 +349,22 @@ html, body {
    RIGHT — DETAIL PANEL
    ═══════════════════════════════════════════════════════════════ */
 .detail-panel {
-  width: 340px; min-width: 340px;
+  width: 340px;
   background: var(--surface);
   border-left: 1px solid var(--border-subtle);
-  overflow-y: auto; display: flex; flex-direction: column;
+  display: flex; flex-direction: column;
+  position: relative; flex-shrink: 0; overflow: hidden;
+}
+
+.detail-resize-handle {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px; cursor: col-resize; z-index: 10;
+  background: transparent; transition: background 0.15s;
+}
+.detail-resize-handle:hover { background: var(--accent); opacity: 0.4; }
+
+.detail-panel-content {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column;
 }
 
 .detail-empty {
@@ -402,10 +413,78 @@ html, body {
 }
 .detail-val {
   font-size: 12px; color: var(--text);
-  text-align: right; word-break: break-all; max-width: 190px;
+  text-align: right; word-break: break-all; max-width: 60%;
 }
 .detail-val a { color: var(--accent-dim); text-decoration: none; }
 .detail-val a:hover { color: var(--accent); }
+
+/* ── Sidebar category action icons ── */
+.cat-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.cat-item-actions {
+  display: none; align-items: center; gap: 2px; flex-shrink: 0;
+}
+.cat-item:hover .cat-item-actions { display: flex; }
+.cat-item:hover .nav-count { display: none; }
+.cat-item-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-faint); font-size: 11px;
+  padding: 2px 4px; border-radius: 3px;
+  line-height: 1; transition: color 0.1s, background 0.1s;
+}
+.cat-item-btn:hover { color: var(--text); background: var(--surface-raised); }
+.cat-item-del:hover { color: var(--red) !important; }
+
+/* Sidebar inline rename input */
+.cat-sidebar-rename-input {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; padding: 2px 6px;
+  border-radius: 4px; border: 1px solid var(--accent);
+  background: var(--bg); color: var(--text);
+  outline: none; width: 100%; min-width: 0;
+}
+
+/* Clickable color dot */
+.cat-dot-clickable { cursor: pointer; transition: transform 0.12s; }
+.cat-dot-clickable:hover { transform: scale(1.4); }
+
+/* Color picker popup */
+.cat-color-popup {
+  position: fixed; z-index: 500;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px;
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.cat-color-swatches {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+}
+.cat-color-swatch {
+  width: 22px; height: 22px; border-radius: 4px;
+  border: 2px solid transparent; cursor: pointer; padding: 0;
+  transition: border-color 0.1s, transform 0.1s;
+}
+.cat-color-swatch:hover { border-color: var(--text); transform: scale(1.15); }
+.cat-color-custom {
+  width: 100%; height: 28px; border-radius: 4px;
+  border: 1px solid var(--border); cursor: pointer;
+  background: none; padding: 0;
+}
+.cat-color-reset {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px; padding: 3px 6px; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-faint); cursor: pointer; text-align: center;
+}
+.cat-color-reset:hover { color: var(--text); border-color: var(--text-faint); }
+
+/* Open-in-X button on tweet cards */
+.tweet-open-x {
+  color: var(--text-faint); font-size: 14px; line-height: 1;
+  text-decoration: none; flex-shrink: 0; transition: color 0.12s;
+}
+.tweet-open-x:hover { color: var(--accent); }
 
 /* ═══════════════════════════════════════════════════════════════
    EMPTY STATE
@@ -638,7 +717,7 @@ html, body {
     <div class="stat-chip">Media: <b id="statMedia">0</b></div>
     <input type="text" class="search-box-top" id="searchBox" placeholder="Search tweets...">
     <button class="btn btn-accent" onclick="document.getElementById('fileInput').click()">Load File</button>
-    <input type="file" id="fileInput" accept=".json,.csv">
+    <input type="file" id="fileInput" accept=".json">
   </div>
 </div>
 
@@ -646,7 +725,7 @@ html, body {
 <div class="drag-overlay" id="dragOverlay">
   <div class="drag-overlay-inner">
     <h2>Drop your file</h2>
-    <p>.json or .csv exported from X Exporter</p>
+    <p>.json exported from X Exporter</p>
   </div>
 </div>
 
@@ -711,7 +790,7 @@ html, body {
       <p>Browse and categorize your exported Twitter/X Likes and Bookmarks.</p>
       <h3>How to use</h3>
       <p>1. Export your tweets using <code>twitter_likes_exporter_v5.js</code> or the browser extension.<br>
-      2. Load the exported <code>.json</code> or <code>.csv</code> file here.<br>
+      2. Load the exported <code>.json</code> file here.<br>
       3. Browse the timeline, categorize tweets manually or with LLM auto-categorization.<br>
       4. Export/import your category data to preserve it across sessions.</p>
       <h3>Keyboard shortcuts</h3>
@@ -778,7 +857,7 @@ html, body {
     <div class="empty-state" id="emptyState">
       <div class="empty-icon">&#x1D54F;</div>
       <h2>X Exporter Viewer</h2>
-      <p>Load a .json or .csv file exported from X Exporter to browse your liked or bookmarked tweets.</p>
+      <p>Load a .json file exported from X Exporter to browse your liked or bookmarked tweets.</p>
       <div class="drop-hint">Drop file here or click Load File</div>
     </div>
     <div class="timeline" id="timeline" style="display:none;"></div>
@@ -786,7 +865,10 @@ html, body {
 
   <!-- RIGHT DETAIL PANEL -->
   <div class="detail-panel" id="detailPanel">
-    <div class="detail-empty">Click a tweet to view details</div>
+    <div class="detail-resize-handle" id="detailResizeHandle"></div>
+    <div class="detail-panel-content" id="detailContent">
+      <div class="detail-empty">Click a tweet to view details</div>
+    </div>
   </div>
 </div>
 
@@ -802,6 +884,7 @@ html, body {
   let searchQuery = "";
   let categories = ["Tech", "News", "Funny", "Design", "Inspiration", "Other"];
   let tweetCategories = {};    // { tweetId: categoryName }
+  let categoryColors = {};     // { categoryName: hexColor }
   let openDropdownId = null;
   let twitterWidgetLoaded = false;
 
@@ -810,15 +893,19 @@ html, body {
 
   // ── Category colors ────────────────────────────────────────────
   const PALETTE = [
-    "#c8f031", "#5ea8f0", "#f05e5e", "#f0a85e", "#a85ef0",
-    "#5ef0c8", "#f05ea8", "#8af05e", "#5e7af0", "#f0e25e",
-    "#e05ef0", "#5ef07a"
+    "#a6cee3", "#1f78b4", "#b2df8a", "#33a02c",
+    "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00",
+    "#cab2d6", "#6a3d9a", "#ffff99", "#b15928"
   ];
 
   function catColor(name) {
     let h = 0;
     for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
     return PALETTE[Math.abs(h) % PALETTE.length];
+  }
+
+  function getCatColor(name) {
+    return categoryColors[name] || catColor(name);
   }
 
   // ── File loading ───────────────────────────────────────────────
@@ -845,41 +932,12 @@ html, body {
     reader.onload = () => {
       try {
         if (name.endsWith(".json")) tweets = JSON.parse(reader.result);
-        else if (name.endsWith(".csv")) tweets = parseCSV(reader.result);
-        else { alert("Use .json or .csv"); return; }
+        else { alert("Use .json"); return; }
         tweets = tweets.filter((t) => t.id);
         onDataLoaded(file.name);
       } catch (err) { alert("Parse error: " + err.message); }
     };
     reader.readAsText(file);
-  }
-
-  function parseCSV(text) {
-    const lines = text.split("\n").filter((l) => l.trim());
-    if (lines.length < 2) return [];
-    const headers = csvLine(lines[0]);
-    return lines.slice(1).map((line) => {
-      const vals = csvLine(line);
-      const obj = {};
-      headers.forEach((h, i) => (obj[h] = vals[i] || ""));
-      return obj;
-    });
-  }
-
-  function csvLine(line) {
-    const r = []; let cur = "", inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (inQ) {
-        if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
-        else cur += c;
-      } else {
-        if (c === '"') inQ = true;
-        else if (c === ',') { r.push(cur); cur = ""; }
-        else cur += c;
-      }
-    }
-    r.push(cur); return r;
   }
 
   function onDataLoaded(filename) {
@@ -926,7 +984,12 @@ html, body {
     for (const cat of categories) {
       const count = tweets.filter((t) => tweetCategories[t.id] === cat).length;
       html += `<button class="cat-item${activeNav === cat ? ' active' : ''}" data-cat="${esc(cat)}">
-        <span class="cat-dot" style="background:${catColor(cat)}"></span> ${esc(cat)}
+        <span class="cat-dot cat-dot-clickable" style="background:${getCatColor(cat)}" onclick="event.stopPropagation();openColorPicker('${esc(cat)}')" title="Change color"></span>
+        <span class="cat-item-name">${esc(cat)}</span>
+        <span class="cat-item-actions">
+          <button class="cat-item-btn" onclick="event.stopPropagation();startSidebarRenameCat('${esc(cat)}')" title="Rename">&#9998;</button>
+          <button class="cat-item-btn cat-item-del" onclick="event.stopPropagation();deleteCat('${esc(cat)}')" title="Delete">&#10005;</button>
+        </span>
         <span class="nav-count">${count}</span>
       </button>`;
     }
@@ -981,14 +1044,14 @@ html, body {
       }
 
       const catChipHTML = `<div class="cat-chip" data-tweet-id="${esc(t.id)}" onclick="event.stopPropagation();toggleCatDropdown('${esc(t.id)}')">
-        ${cat ? `<span class="cat-chip-dot" style="background:${catColor(cat)}"></span>${esc(cat)}` : '<span style="opacity:0.5">+ tag</span>'}
+        ${cat ? `<span class="cat-chip-dot" style="background:${getCatColor(cat)}"></span>${esc(cat)}` : '<span style="opacity:0.5">+ tag</span>'}
       </div>
       <div class="cat-dropdown" id="dd-${esc(t.id)}">
         <button class="cat-dropdown-item${!cat ? ' active' : ''}" onclick="event.stopPropagation();setCat('${esc(t.id)}',null)">
           <span class="cat-dot" style="background:var(--text-faint)"></span> None
         </button>
         ${categories.map((c) => `<button class="cat-dropdown-item${cat === c ? ' active' : ''}" onclick="event.stopPropagation();setCat('${esc(t.id)}','${esc(c)}')">
-          <span class="cat-dot" style="background:${catColor(c)}"></span> ${esc(c)}
+          <span class="cat-dot" style="background:${getCatColor(c)}"></span> ${esc(c)}
         </button>`).join("")}
       </div>`;
 
@@ -1000,6 +1063,7 @@ html, body {
             <div class="tweet-card-handle">@${esc(t.user_screen_name || "")}</div>
           </div>
           <div class="tweet-card-date">${date}</div>
+          <a class="tweet-open-x" href="https://x.com/${esc(t.user_screen_name || "")}/status/${esc(t.id)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open in X">&#x2197;</a>
         </div>
         <div class="tweet-card-body">${linkify(esc(t.full_text || ""))}</div>
         ${mediaHTML}
@@ -1043,7 +1107,7 @@ html, body {
 
   function renderDetail(id) {
     const t = tweets.find((tw) => tw.id === id);
-    if (!t) { $("#detailPanel").innerHTML = '<div class="detail-empty">Click a tweet to view details</div>'; return; }
+    if (!t) { $("#detailContent").innerHTML = '<div class="detail-empty">Click a tweet to view details</div>'; return; }
 
     const fields = ["id", "user_name", "user_screen_name", "full_text", "url", "media_url", "media_type", "media_count", "created_at"];
     const cat = tweetCategories[t.id];
@@ -1057,10 +1121,10 @@ html, body {
     }).join("");
 
     if (cat) {
-      fieldsHTML += `<div class="detail-row"><span class="detail-key">category</span><span class="detail-val" style="color:${catColor(cat)}">${esc(cat)}</span></div>`;
+      fieldsHTML += `<div class="detail-row"><span class="detail-key">category</span><span class="detail-val" style="color:${getCatColor(cat)}">${esc(cat)}</span></div>`;
     }
 
-    $("#detailPanel").innerHTML = `
+    $("#detailContent").innerHTML = `
       <div class="detail-oembed" id="oembedContainer">
         <div class="detail-oembed-loading"><span class="spinner"></span>&nbsp; Loading embed...</div>
       </div>
@@ -1155,7 +1219,7 @@ html, body {
     list.innerHTML = categories.map((cat) => {
       const count = tweets.filter((t) => tweetCategories[t.id] === cat).length;
       return `<div class="cat-manage-item" id="cat-row-${esc(cat)}">
-        <span class="cat-dot" style="background:${catColor(cat)}"></span>
+        <span class="cat-dot" style="background:${getCatColor(cat)}"></span>
         <span class="cat-manage-name">${esc(cat)}</span>
         <span class="cat-count">${count}</span>
         <button class="cat-manage-edit" onclick="startRenameCat('${esc(cat)}')" title="Rename">&#9998;</button>
@@ -1185,6 +1249,7 @@ html, body {
     const idx = categories.indexOf(oldName);
     if (idx !== -1) categories[idx] = newName;
     for (const id in tweetCategories) { if (tweetCategories[id] === oldName) tweetCategories[id] = newName; }
+    if (categoryColors[oldName]) { categoryColors[newName] = categoryColors[oldName]; delete categoryColors[oldName]; }
     if (activeNav === oldName) activeNav = newName;
     renderSettingsCatList();
     renderSidebar();
@@ -1198,15 +1263,76 @@ html, body {
       for (const id in tweetCategories) { if (tweetCategories[id] === cat) delete tweetCategories[id]; }
     }
     categories = categories.filter((c) => c !== cat);
+    delete categoryColors[cat];
     if (activeNav === cat) { activeNav = "all"; $$(".nav-item").forEach((n) => n.classList.remove("active")); $('[data-nav="all"]').classList.add("active"); }
     renderSettingsCatList();
     renderSidebar();
     applyFilters();
   };
 
+  // ── Sidebar inline rename ──────────────────────────────────────
+  window.startSidebarRenameCat = function (cat) {
+    const btn = document.querySelector(`#catList .cat-item[data-cat="${CSS.escape(cat)}"]`);
+    if (!btn) return;
+    btn.innerHTML = `
+      <span class="cat-dot" style="background:${getCatColor(cat)}"></span>
+      <input class="cat-sidebar-rename-input" value="${esc(cat)}" data-old="${esc(cat)}"
+        onkeydown="if(event.key==='Enter')commitRenameCat(this); if(event.key==='Escape')renderSidebar();"
+        onblur="commitRenameCat(this)"
+        onclick="event.stopPropagation()">
+    `;
+    const inp = btn.querySelector(".cat-sidebar-rename-input");
+    inp.focus(); inp.select();
+  };
+
+  // ── Color picker ───────────────────────────────────────────────
+  window.openColorPicker = function (cat) {
+    document.querySelectorAll(".cat-color-popup").forEach((p) => p.remove());
+    const dot = document.querySelector(`#catList .cat-item[data-cat="${CSS.escape(cat)}"] .cat-dot-clickable`);
+    if (!dot) return;
+
+    const popup = document.createElement("div");
+    popup.className = "cat-color-popup";
+    popup.innerHTML = `
+      <div class="cat-color-swatches">${PALETTE.map((c) => `<button class="cat-color-swatch" style="background:${c}" onclick="setCatColor('${esc(cat)}','${c}')"></button>`).join("")}</div>
+      <input type="color" class="cat-color-custom" value="${getCatColor(cat)}" oninput="setCatColor('${esc(cat)}',this.value)">
+      <button class="cat-color-reset" onclick="resetCatColor('${esc(cat)}')">Reset to default</button>
+    `;
+    document.body.appendChild(popup);
+    const rect = dot.getBoundingClientRect();
+    popup.style.top = (rect.bottom + 6) + "px";
+    popup.style.left = rect.left + "px";
+
+    setTimeout(() => {
+      document.addEventListener("click", function closePopup(e) {
+        if (!popup.contains(e.target)) {
+          popup.remove();
+          document.removeEventListener("click", closePopup);
+        }
+      });
+    }, 0);
+  };
+
+  window.setCatColor = function (cat, color) {
+    categoryColors[cat] = color;
+    renderSidebar();
+    renderTimeline();
+    if (selectedId) renderDetail(selectedId);
+    renderSettingsCatList();
+  };
+
+  window.resetCatColor = function (cat) {
+    delete categoryColors[cat];
+    document.querySelectorAll(".cat-color-popup").forEach((p) => p.remove());
+    renderSidebar();
+    renderTimeline();
+    if (selectedId) renderDetail(selectedId);
+    renderSettingsCatList();
+  };
+
   // ── Export / Import categories ─────────────────────────────────
   window.exportCategories = function () {
-    const data = { categories, tweetCategories };
+    const data = { categories, tweetCategories, categoryColors };
     const json = JSON.stringify(data, null, 2);
     const d = new Date();
     const ds = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
@@ -1228,6 +1354,9 @@ html, body {
         }
         if (data.tweetCategories) {
           Object.assign(tweetCategories, data.tweetCategories);
+        }
+        if (data.categoryColors) {
+          Object.assign(categoryColors, data.categoryColors);
         }
         renderSidebar();
         applyFilters();
@@ -1345,7 +1474,7 @@ html, body {
   // ── Clear data ─────────────────────────────────────────────────
   window.clearData = function () {
     if (!confirm("Clear all tweets and categories?")) return;
-    tweets = []; filtered = []; tweetCategories = {}; selectedId = null;
+    tweets = []; filtered = []; tweetCategories = {}; categoryColors = {}; selectedId = null;
     activeNav = "all";
     $("#fileBadge").textContent = "No file";
     $("#statCount").textContent = "0";
@@ -1353,7 +1482,7 @@ html, body {
     $("#timeline").style.display = "none";
     $("#timeline").innerHTML = "";
     $("#emptyState").style.display = "flex";
-    $("#detailPanel").innerHTML = '<div class="detail-empty">Click a tweet to view details</div>';
+    $("#detailContent").innerHTML = '<div class="detail-empty">Click a tweet to view details</div>';
     $$(".nav-item").forEach((n) => n.classList.remove("active"));
     $('[data-nav="all"]').classList.add("active");
     renderSidebar();
@@ -1407,6 +1536,32 @@ html, body {
       e.returnValue = "";
     }
   });
+
+  // ── Right panel resize ─────────────────────────────────────────
+  (function () {
+    const panel = $("#detailPanel");
+    const handle = $("#detailResizeHandle");
+    let resizing = false, startX = 0, startW = 0;
+    handle.addEventListener("mousedown", (e) => {
+      resizing = true;
+      startX = e.clientX;
+      startW = panel.offsetWidth;
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+      e.preventDefault();
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (!resizing) return;
+      const newW = Math.max(250, Math.min(600, startW + (startX - e.clientX)));
+      panel.style.width = newW + "px";
+    });
+    document.addEventListener("mouseup", () => {
+      if (!resizing) return;
+      resizing = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    });
+  })();
 
   // Initial sidebar render
   renderSidebar();
